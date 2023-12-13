@@ -1,0 +1,49 @@
+Language: Cpp
+BasedOnStyle: Google
+
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossComments: false
+  AcrossEmptyLines: true
+  AlignCompound: true
+  PadOperators: true
+AlignConsecutiveBitFields:
+  Enabled: true
+  AcrossComments: false
+  AcrossEmptyLines: true
+  AlignCompound: true
+  PadOperators: true
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossComments: false
+  AcrossEmptyLines: true
+  AlignCompound: true
+  PadOperators: true
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossComments: false
+  AcrossEmptyLines: true
+  AlignCompound: true
+  PadOperators: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: true
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 2
+AlignAfterOpenBracket: false
+AlignArrayOfStructures: Left
+AlignEscapedNewlines: Right
+AlignOperands: AlignAfterOperator
+
+DerivePointerAlignment: true
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+PackConstructorInitializers: NextLine

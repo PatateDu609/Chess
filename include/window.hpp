@@ -3,50 +3,67 @@
 
 #include <SDL.h>
 
-#include <string>
 #include <exception>
+#include <memory>
+#include <string>
+
+#include "app.hpp"
 
 namespace graphics {
-	namespace window {
-		void init();
+namespace window {
+void		 init();
 
-		class Window final {
-		public:
-			Window() = delete;
+void		 end();
 
-			Window(const Window &) = delete;
+class Window final {
+   public:
+	Window()						  = delete;
 
-			Window &operator=(const Window &) = delete;
+	Window(const Window &)			  = delete;
 
-			void open();
+	Window &operator=(const Window &) = delete;
 
-			explicit Window(std::string window_name, uint32_t width = 800, uint32_t height = 800);
+	~Window()						  = default;
 
-		private:
-			SDL_Window *window;
+	void open();
 
-			std::string name;
-			uint32_t w;
-			uint32_t h;
-		};
-	}
+	void run();
 
-	class SDLException : public std::exception {
-	public:
-		SDLException() noexcept = default;
+	void bind_app(std::unique_ptr<::app::Application> &app_obj);
 
-		SDLException(SDLException &) noexcept = default;
+	explicit Window(
+		std::string window_name, uint32_t width = 800, uint32_t height = 800);
 
-		~SDLException() noexcept override = default;
-
-		explicit SDLException(std::string message);
-
-		[[nodiscard]] const char *what() const noexcept override;
-
-	private:
-		std::string msg;
+   private:
+	struct SDLWindowDeleter {
+		void operator()(SDL_Window *win) const;
 	};
 
-}
+	std::unique_ptr<SDL_Window, SDLWindowDeleter> window;
+	std::unique_ptr<::app::Application>			  app;
 
-#endif //CHESS_WINDOW_HPP
+	std::string									  name;
+	uint32_t									  w;
+	uint32_t									  h;
+};
+}  // namespace window
+
+class SDLException : public std::exception {
+   public:
+	SDLException() noexcept				  = default;
+
+	SDLException(SDLException &) noexcept = default;
+
+	~SDLException() noexcept override	  = default;
+
+	explicit SDLException(std::string message);
+
+	[[nodiscard]] const char *what() const noexcept override;
+
+   private:
+	std::string msg;
+};
+
+}  // namespace graphics
+
+#endif	// CHESS_WINDOW_HPP

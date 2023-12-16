@@ -14,35 +14,22 @@ int init() {
 	return 0;
 }
 
-//int main() {
-//	if (init()) {
-//		return EXIT_FAILURE;
-//	}
-//
-//	graphics::window::Window win("Chess");
-//
-//	win.open();
-//
-//	graphics::window::end();
-//	return EXIT_SUCCESS;
-//}
-
-
 int main() {
-	std::vector<app::game::Coord> coords;
-
-	coords.emplace_back(0, 0);
-	coords.emplace_back(7, 7);
-	coords.emplace_back(3, 2);
-
-	coords.emplace_back("a1");
-	coords.emplace_back("h8");
-	coords.emplace_back("g2");
-	coords.emplace_back("b5");
-
-	for (const auto &item : coords) {
-		std::cout << item << std::endl;
+	if (init()) {
+		return EXIT_FAILURE;
 	}
 
-	return 0;
+	graphics::window::Window win("Chess");
+
+	try {
+		win.bind_app(std::make_unique<app::game::Chess>(win));
+		win.open();
+		win.run();
+	} catch (const std::exception& e) {
+		std::cerr << "caught exception: " << e.what() << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	graphics::window::end();
+	return EXIT_SUCCESS;
 }

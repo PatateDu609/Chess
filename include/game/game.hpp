@@ -6,6 +6,7 @@
 
 #include "app.hpp"
 #include "game/piece.hpp"
+#include "window.hpp"
 
 namespace app::game {
 
@@ -59,16 +60,15 @@ private:
 class Board {
 public:
 	explicit Board(bool empty = false);
-	~Board()						   = default;
-	Board(const Board &)			   = delete;
-	Board	 &operator=(const Board &) = delete;
+	~Board()						= default;
+	Board(const Board &)			= delete;
+	Board &operator=(const Board &) = delete;
 
-	void	  init_board();
-	void	  flip_board();
+	void   init_board();
+	void   flip_board();
+	bool   flipped() const;
 
-	PieceKind read_case(const std::string &coord) const;
-
-	void	  dump(bool merged = false) const;
+	void   dump(bool merged = false) const;
 
 private:
 	typedef std::bitset<64>					bitboard;
@@ -84,19 +84,22 @@ private:
 
 class Chess final : public Application {
 public:
-	Chess()							= default;
+	Chess()							= delete;
 	~Chess() final					= default;
 	Chess(const Chess &)			= delete;
 	Chess &operator=(const Chess &) = delete;
 
-	void   flip_board();
+	explicit Chess(graphics::window::Window &window);
+
+	void flip_board();
 
 protected:
 	void draw() const override;
 	void handle_events(const SDL_Event &e) override;
 
 private:
-	Board board;
+	Board					  board;
+	graphics::window::Window &win;
 };
 
 }  // namespace app::game

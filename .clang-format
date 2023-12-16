@@ -49,6 +49,8 @@ ReferenceAlignment: Right
 
 PackConstructorInitializers: NextLine
 IndentAccessModifiers: false
+BinPackArguments: false
+BinPackParameters: false
 
 AccessModifierOffset: -4
 

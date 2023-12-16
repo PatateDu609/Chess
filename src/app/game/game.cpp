@@ -166,6 +166,10 @@ void Board::flip_board() {
 	is_flipped = !is_flipped;
 }
 
+bool Board::flipped() const {
+	return is_flipped;
+}
+
 void Board::dump(bool merged) const {
 	std::cout << "Board is " << (is_valid() ? "" : "NOT ") << "valid\n";
 
@@ -312,11 +316,51 @@ bool Board::is_valid() const {
 	return final.count() == ref;
 }
 
+Chess::Chess(graphics::window::Window &window) : win(window) {
+}
+
 void Chess::flip_board() {
 	board.flip_board();
 }
 
 void Chess::draw() const {
+	const int case_size		= static_cast<int>(std::min(win.size().first / 8, win.size().second / 8));
+
+	auto	  weak_renderer = win.get_renderer();
+
+	uint8_t	  light_r = 237, light_g = 214, light_b = 175;
+	uint8_t	  dark_r = 184, dark_g = 135, dark_b = 97;
+	uint8_t	  r, g, b;
+
+	if (auto renderer = weak_renderer.lock()) {
+		for (size_t y = 0; y < 8; y++) {
+			bool y_even = y % 2 == 0;
+
+			for (size_t x = 0; x < 8; x++) {
+				bool x_even = x % 2 == 0;
+
+				if (y_even) {
+					r = x_even ? light_r : dark_r;
+					g = x_even ? light_g : dark_g;
+					b = x_even ? light_b : dark_b;
+				} else {
+					r = x_even ? dark_r : light_r;
+					g = x_even ? dark_g : light_g;
+					b = x_even ? dark_b : light_b;
+				}
+
+				SDL_Rect rect;
+				rect.w = rect.h = case_size;
+				rect.x			= static_cast<int>(x) * case_size;
+				rect.y			= static_cast<int>(y) * case_size;
+
+				SDL_SetRenderDrawColor(renderer.get(), r, g, b, SDL_ALPHA_OPAQUE);
+				SDL_RenderFillRect(renderer.get(), &rect);
+			}
+		}
+	} else {
+		throw std::runtime_error("couldn't get renderer: weak ptr expired");
+	}
 }
 
 void Chess::handle_events(const SDL_Event &e) {

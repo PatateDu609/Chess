@@ -53,3 +53,4 @@ IndentAccessModifiers: false
 AccessModifierOffset: -4
 
 AllowShortLambdasOnASingleLine: None
+AllowShortFunctionsOnASingleLine: None

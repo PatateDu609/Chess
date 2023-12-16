@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 
 #include "game/game.hpp"
 #include "window.hpp"
@@ -28,9 +29,20 @@ int init() {
 
 
 int main() {
-	app::game::Board b;
+	std::vector<app::game::Coord> coords;
 
-	b.dump(true);
+	coords.emplace_back(0, 0);
+	coords.emplace_back(7, 7);
+	coords.emplace_back(3, 2);
+
+	coords.emplace_back("a1");
+	coords.emplace_back("h8");
+	coords.emplace_back("g2");
+	coords.emplace_back("b5");
+
+	for (const auto &item : coords) {
+		std::cout << item << std::endl;
+	}
 
 	return 0;
 }

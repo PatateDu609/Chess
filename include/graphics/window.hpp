@@ -95,7 +95,7 @@ public:
 	void				  a(uint8_t val);
 	[[nodiscard]] uint8_t a() const;
 
-	operator SDL_Color() const;
+	explicit operator SDL_Color() const;
 
 private:
 	std::array<uint8_t, 4> comp;

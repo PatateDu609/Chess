@@ -3,10 +3,12 @@
 
 #include <bitset>
 #include <unordered_map>
+#include <vector>
 
 #include "app.hpp"
 #include "game/piece.hpp"
-#include "window.hpp"
+#include "graphics/text.hpp"
+#include "graphics/window.hpp"
 
 namespace app::game {
 
@@ -60,15 +62,15 @@ private:
 class Board {
 public:
 	explicit Board(bool empty = false);
-	~Board()						= default;
-	Board(const Board &)			= delete;
-	Board &operator=(const Board &) = delete;
+	~Board()									= default;
+	Board(const Board &)						= delete;
+	Board			  &operator=(const Board &) = delete;
 
-	void   init_board();
-	void   flip_board();
-	bool   flipped() const;
+	void			   init_board();
+	void			   flip_board();
+	[[nodiscard]] bool flipped() const;
 
-	void   dump(bool merged = false) const;
+	void			   dump(bool merged = false) const;
 
 private:
 	typedef std::bitset<64>					bitboard;
@@ -95,11 +97,23 @@ public:
 
 protected:
 	void draw() const override;
+	void update() override;
 	void handle_events(const SDL_Event &e) override;
 
 private:
 	Board					  board;
 	graphics::window::Window &win;
+
+	const int				  case_size;
+
+	void					  check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer);
+
+	struct PreRenderedBoardText {
+		std::vector<graphics::TextRenderer> numbers;
+		std::vector<graphics::TextRenderer> letters;
+	};
+
+	std::pair<std::shared_ptr<SDL_Renderer>, PreRenderedBoardText> preRenderedBoardText;
 };
 
 }  // namespace app::game

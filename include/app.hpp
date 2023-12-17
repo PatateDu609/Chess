@@ -9,14 +9,15 @@ class Window;
 
 namespace app {
 class Application {
-   public:
+public:
 	Application(const Application&)			   = delete;
 	Application& operator=(const Application&) = delete;
 
 	Application()							   = default;
 	virtual ~Application()					   = default;
 
-   protected:
+protected:
+	virtual void update()						   = 0;
 	virtual void draw() const					   = 0;
 	virtual void handle_events(const SDL_Event& e) = 0;
 

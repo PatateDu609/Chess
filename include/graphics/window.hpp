@@ -3,6 +3,7 @@
 
 #include <SDL.h>
 
+#include <array>
 #include <exception>
 #include <memory>
 #include <string>
@@ -11,8 +12,8 @@
 
 namespace graphics {
 namespace window {
-void		 init();
 
+void		 init();
 void		 end();
 
 class Window final {
@@ -27,11 +28,11 @@ public:
 
 	explicit Window(std::string window_name, uint32_t width = 800, uint32_t height = 800);
 
-	void									open();
-	void									run();
-	void									bind_app(std::unique_ptr<::app::Application> app_obj);
+	void									  open();
+	void									  run();
+	void									  bind_app(std::unique_ptr<::app::Application> app_obj);
 
-	[[nodiscard]] std::pair<size_t, size_t> size() const;
+	[[nodiscard]] std::pair<size_t, size_t>	  size() const;
 
 	[[nodiscard]] std::weak_ptr<SDL_Renderer> get_renderer();
 
@@ -68,6 +69,36 @@ public:
 
 private:
 	std::string msg;
+};
+
+struct Color final {
+public:
+	explicit Color(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0, uint8_t a = SDL_ALPHA_OPAQUE);
+	Color(const Color &)						   = default;
+	Color				 &operator=(const Color &) = default;
+
+	static const Color	  LIGHT_SQUARE;
+	static const Color	  DARK_SQUARE;
+
+	void				  rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+	void				  rgb(uint8_t r, uint8_t g, uint8_t b);
+
+	void				  r(uint8_t val);
+	[[nodiscard]] uint8_t r() const;
+
+	void				  g(uint8_t val);
+	[[nodiscard]] uint8_t g() const;
+
+	void				  b(uint8_t val);
+	[[nodiscard]] uint8_t b() const;
+
+	void				  a(uint8_t val);
+	[[nodiscard]] uint8_t a() const;
+
+	operator SDL_Color() const;
+
+private:
+	std::array<uint8_t, 4> comp;
 };
 
 }  // namespace graphics

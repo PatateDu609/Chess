@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "game/game.hpp"
-#include "window.hpp"
+#include "graphics/window.hpp"
 
 int init() {
 	try {

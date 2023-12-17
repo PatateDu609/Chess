@@ -47,7 +47,7 @@ DerivePointerAlignment: true
 PointerAlignment: Right
 ReferenceAlignment: Right
 
-PackConstructorInitializers: NextLine
+PackConstructorInitializers: Never
 IndentAccessModifiers: false
 BinPackArguments: false
 BinPackParameters: false
@@ -56,3 +56,5 @@ AccessModifierOffset: -4
 
 AllowShortLambdasOnASingleLine: None
 AllowShortFunctionsOnASingleLine: None
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false

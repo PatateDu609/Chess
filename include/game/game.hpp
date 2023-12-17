@@ -61,7 +61,8 @@ private:
 
 class Board {
 public:
-	explicit Board(bool empty = false);
+	explicit Board(graphics::window::Window &window, bool empty = false);
+
 	~Board()									= default;
 	Board(const Board &)						= delete;
 	Board			  &operator=(const Board &) = delete;
@@ -72,6 +73,9 @@ public:
 
 	void			   dump(bool merged = false) const;
 
+	void			   update();
+	void			   draw() const;
+
 private:
 	typedef std::bitset<64>					bitboard;
 
@@ -80,8 +84,21 @@ private:
 	void									dump_subboard(const PieceKind &kind) const;
 	void									dump_merged_board() const;
 
+	graphics::window::Window			   &win;
+
 	std::unordered_map<PieceKind, bitboard> boards;
 	bool									is_flipped;
+
+	const int								case_size;
+
+	void									check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer);
+
+	struct PreRenderedBoardText {
+		std::vector<graphics::TextRenderer> numbers;
+		std::vector<graphics::TextRenderer> letters;
+	};
+
+	std::pair<std::shared_ptr<SDL_Renderer>, PreRenderedBoardText> preRenderedBoardText;
 };
 
 class Chess final : public Application {
@@ -103,17 +120,6 @@ protected:
 private:
 	Board					  board;
 	graphics::window::Window &win;
-
-	const int				  case_size;
-
-	void					  check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer);
-
-	struct PreRenderedBoardText {
-		std::vector<graphics::TextRenderer> numbers;
-		std::vector<graphics::TextRenderer> letters;
-	};
-
-	std::pair<std::shared_ptr<SDL_Renderer>, PreRenderedBoardText> preRenderedBoardText;
 };
 
 }  // namespace app::game

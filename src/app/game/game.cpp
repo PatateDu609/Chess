@@ -128,8 +128,10 @@ bool Coord::is_valid(std::string algebraic) {
 	return ('a' <= letter && letter <= 'h') && ('1' <= nb && nb <= '8');
 }
 
-Board::Board(bool empty)
-	: is_flipped(false) {
+Board::Board(graphics::window::Window &window, bool empty)
+	: win(window),
+	  is_flipped(false),
+	  case_size(static_cast<int>(std::min(win.size().first / 8, win.size().second / 8))) {
 	if (!empty) init_board();
 }
 
@@ -179,6 +181,96 @@ void Board::flip_board() {
 
 bool Board::flipped() const {
 	return is_flipped;
+}
+
+void Board::update() {
+	auto weak_renderer = win.get_renderer();
+
+	if (auto renderer = weak_renderer.lock()) {
+		check_pre_rendered(renderer);
+	}
+}
+
+void Board::draw() const {
+	using graphics::Color;
+
+	auto  weak_renderer = win.get_renderer();
+	Color col;
+
+	if (auto renderer = weak_renderer.lock()) {
+		for (size_t y = 0; y < 8; y++) {
+			bool y_even = y % 2 == 0;
+
+			for (size_t x = 0; x < 8; x++) {
+				bool x_even = x % 2 == 0;
+
+				if (y_even) {
+					col = x_even ? Color::LIGHT_SQUARE : Color::DARK_SQUARE;
+				} else {
+					col = x_even ? Color::DARK_SQUARE : Color::LIGHT_SQUARE;
+				}
+
+				SDL_Rect rect;
+				rect.w = rect.h = case_size;
+				rect.x			= static_cast<int>(x) * case_size;
+				rect.y			= static_cast<int>(y) * case_size;
+
+				SDL_SetRenderDrawColor(renderer.get(), col.r(), col.g(), col.b(), col.a());
+				SDL_RenderFillRect(renderer.get(), &rect);
+			}
+		}
+
+		for (size_t i = 0; i < 8; i++) {
+			preRenderedBoardText.second.numbers[i].render();
+			preRenderedBoardText.second.letters[i].render();
+		}
+	} else {
+		throw std::runtime_error("couldn't get renderer: weak ptr expired");
+	}
+}
+
+
+void Board::check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer) {
+	if (renderer == preRenderedBoardText.first) {
+		return;
+	}
+
+	if (renderer != preRenderedBoardText.first) {
+		preRenderedBoardText.second.numbers.clear();
+		preRenderedBoardText.second.letters.clear();
+	}
+
+	using graphics::Color;
+
+	preRenderedBoardText.first		  = renderer;
+	PreRenderedBoardText &preRendered = preRenderedBoardText.second;
+	const char			 *letters_str = flipped() ? "hgfedcba" : "abcdefgh";
+
+	preRendered.numbers.reserve(8);
+	preRendered.letters.reserve(8);
+
+	for (size_t i = 0; i < 8; i++) {
+		// Numbers initialization
+
+		preRendered.numbers.emplace_back(renderer, "Segoe UI bold.ttf", 18);
+
+		preRendered.numbers.back().set_coord(static_cast<size_t>(.06 * case_size),
+			static_cast<size_t>((static_cast<double>(i) + 0.04) * case_size));
+		preRendered.numbers.back().set_content(std::to_string(flipped() ? i + 1 : 8 - i));
+		preRendered.numbers.back().set_color(i % 2 ? Color::LIGHT_SQUARE : Color::DARK_SQUARE);
+
+		preRendered.numbers.back().reload_text();
+
+		// Letters initialization
+
+		preRendered.letters.emplace_back(renderer, "Segoe UI bold.ttf", 18);
+		preRendered.letters.back().set_coord(static_cast<size_t>((static_cast<double>(i) + 0.8) * case_size),
+			static_cast<size_t>(7.72 * case_size));
+		preRendered.letters.back().set_content(std::string(1, letters_str[i]));
+		preRendered.letters.back().set_color(i % 2 ? Color::DARK_SQUARE : Color::LIGHT_SQUARE);
+
+		preRendered.letters.back().reload_text();
+	}
 }
 
 void Board::dump(bool merged) const {
@@ -329,7 +421,7 @@ bool Board::is_valid() const {
 
 Chess::Chess(graphics::window::Window &window)
 	: win(window),
-	  case_size(static_cast<int>(std::min(win.size().first / 8, win.size().second / 8))) {
+	  board(window, false) {
 }
 
 void Chess::flip_board() {
@@ -337,96 +429,17 @@ void Chess::flip_board() {
 }
 
 void Chess::update() {
-	auto weak_renderer = win.get_renderer();
-
-	if (auto renderer = weak_renderer.lock()) {
-		check_pre_rendered(renderer);
-	}
+	board.update();
 }
 
 void Chess::draw() const {
-	using graphics::Color;
-
-	auto  weak_renderer = win.get_renderer();
-	Color col;
-
-	if (auto renderer = weak_renderer.lock()) {
-		for (size_t y = 0; y < 8; y++) {
-			bool y_even = y % 2 == 0;
-
-			for (size_t x = 0; x < 8; x++) {
-				bool x_even = x % 2 == 0;
-
-				if (y_even) {
-					col = x_even ? Color::LIGHT_SQUARE : Color::DARK_SQUARE;
-				} else {
-					col = x_even ? Color::DARK_SQUARE : Color::LIGHT_SQUARE;
-				}
-
-				SDL_Rect rect;
-				rect.w = rect.h = case_size;
-				rect.x			= static_cast<int>(x) * case_size;
-				rect.y			= static_cast<int>(y) * case_size;
-
-				SDL_SetRenderDrawColor(renderer.get(), col.r(), col.g(), col.b(), col.a());
-				SDL_RenderFillRect(renderer.get(), &rect);
-			}
-		}
-
-		for (size_t i = 0; i < 8; i++) {
-			preRenderedBoardText.second.numbers[i].render();
-			preRenderedBoardText.second.letters[i].render();
-		}
-	} else {
-		throw std::runtime_error("couldn't get renderer: weak ptr expired");
-	}
+	board.draw();
 }
 
 void Chess::handle_events(const SDL_Event &e) {
+
 }
 
-void Chess::check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer) {
-	if (renderer == preRenderedBoardText.first) {
-		return;
-	}
-
-	if (renderer != preRenderedBoardText.first) {
-		preRenderedBoardText.second.numbers.clear();
-		preRenderedBoardText.second.letters.clear();
-	}
-
-	using graphics::Color;
-
-	preRenderedBoardText.first		  = renderer;
-	PreRenderedBoardText &preRendered = preRenderedBoardText.second;
-	const char			 *letters_str = board.flipped() ? "hgfedcba" : "abcdefgh";
-
-	preRendered.numbers.reserve(8);
-	preRendered.letters.reserve(8);
-
-	for (size_t i = 0; i < 8; i++) {
-		// Numbers initialization
-
-		preRendered.numbers.emplace_back(renderer, "Segoe UI bold.ttf", 18);
-
-		preRendered.numbers.back().set_coord(static_cast<size_t>(.06 * case_size),
-			static_cast<size_t>((static_cast<double>(i) + 0.04) * case_size));
-		preRendered.numbers.back().set_content(std::to_string(board.flipped() ? i + 1 : 8 - i));
-		preRendered.numbers.back().set_color(i % 2 ? Color::LIGHT_SQUARE : Color::DARK_SQUARE);
-
-		preRendered.numbers.back().reload_text();
-
-		// Letters initialization
-
-		preRendered.letters.emplace_back(renderer, "Segoe UI bold.ttf", 18);
-		preRendered.letters.back().set_coord(static_cast<size_t>((static_cast<double>(i) + 0.8) * case_size),
-			static_cast<size_t>(7.72 * case_size));
-		preRendered.letters.back().set_content(std::string(1, letters_str[i]));
-		preRendered.letters.back().set_color(i % 2 ? Color::DARK_SQUARE : Color::LIGHT_SQUARE);
-
-		preRendered.letters.back().reload_text();
-	}
-}
 
 }  // namespace app::game
 

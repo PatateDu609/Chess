@@ -1,7 +1,9 @@
 #ifndef CHESS_PIECE_HPP
 #define CHESS_PIECE_HPP
 
+#include <filesystem>
 #include <string>
+#include <vector>
 
 namespace app::game {
 
@@ -21,15 +23,18 @@ public:
 	static const PieceKind WHITE_QUEEN;
 	static const PieceKind WHITE_KING;
 
+	static const std::vector<PieceKind> ALL_PIECE_KINDS;
+
 private:
 	PieceKind(std::string name, bool is_white, std::string algebraic_name);
 
 public:
-	[[nodiscard]] std::string get_name() const;
-	[[nodiscard]] bool		  is_white() const;
-	[[nodiscard]] std::string get_algebraic_name() const;
+	[[nodiscard]] std::string			get_name() const;
+	[[nodiscard]] bool					is_white() const;
+	[[nodiscard]] std::string			get_algebraic_name() const;
+	[[nodiscard]] std::filesystem::path get_sprite_path() const;
 
-	bool					  operator==(const PieceKind &other) const;
+	bool								operator==(const PieceKind &other) const;
 
 private:
 	std::string _name;
@@ -40,6 +45,8 @@ private:
 };
 
 }  // namespace app::game
+
+std::ostream& operator<<(std::ostream& os, const app::game::PieceKind& kind);
 
 template <>
 struct std::hash<app::game::PieceKind> {

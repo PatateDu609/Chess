@@ -1,6 +1,7 @@
 #ifndef CHESS_RESOURCES_HPP
 #define CHESS_RESOURCES_HPP
 
+#include <SDL_image.h>
 #include <SDL_ttf.h>
 
 #include <filesystem>
@@ -46,23 +47,48 @@ public:
 	   explicit Font(std::filesystem::path filename, uint8_t font_size = 12);
 	   Font(const Font &other);
 	   Font &operator=(const Font &other);
-	   ~Font();
+	   ~Font() = default;
 
-	   std::weak_ptr<TTF_Font> get();
-	   
-	   static std::filesystem::path get_subroot();
+	   [[nodiscard]] std::weak_ptr<TTF_Font> get() const;
+
+	   static std::filesystem::path			 get_subroot();
 
 private:
-	   void							load();
+	   void						 load();
 
-	   std::filesystem::path		filename;
-	   uint8_t						size;
-	   std::shared_ptr<TTF_Font>	font;
+	   std::filesystem::path	 filename;
+	   uint8_t					 size;
+	   std::shared_ptr<TTF_Font> font;
 
 	   friend ResourceManager<Font>;
 };
 
-extern std::shared_ptr<ResourceManager<Font> > font_manager;
+class Image final {
+public:
+	Image() = delete;
+
+	explicit Image(std::filesystem::path filename, size_t w, size_t h);
+	Image(const Image &other);
+	Image &operator=(const Image &other);
+	~Image();
+
+	[[nodiscard]] std::weak_ptr<SDL_Surface> get() const;
+
+	static std::filesystem::path			 get_subroot();
+
+private:
+	void						 load();
+
+	std::filesystem::path		 filename;
+	std::shared_ptr<SDL_Surface> image;
+	size_t w;
+	size_t h;
+
+	friend ResourceManager<Image>;
+};
+
+extern std::shared_ptr<ResourceManager<Font> >	font_manager;
+extern std::shared_ptr<ResourceManager<Image> > image_manager;
 
 }  // namespace app::resources
 

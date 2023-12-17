@@ -1,5 +1,6 @@
 #include "graphics/window.hpp"
 
+#include <SDL_image.h>
 #include <SDL_ttf.h>
 
 #include <utility>
@@ -8,7 +9,12 @@ namespace graphics {
 namespace window {
 
 Window::Window(std::string window_name, uint32_t width, uint32_t height)
-	: window(nullptr, SDLWindowDeleter()), renderer(), name(std::move(window_name)), w(width), h(height), should_quit(false) {
+	: window(nullptr, SDLWindowDeleter()),
+	  renderer(),
+	  name(std::move(window_name)),
+	  w(width),
+	  h(height),
+	  should_quit(false) {
 }
 
 Window::~Window() {
@@ -36,6 +42,9 @@ void Window::quit() {
 
 void Window::run() {
 	while (!should_quit) {
+		SDL_SetRenderDrawColor(renderer.get(), 0, 0, 0, SDL_ALPHA_OPAQUE);
+		SDL_RenderClear(renderer.get());
+
 		SDL_Event e;
 
 		while (SDL_PollEvent(&e) != 0) {
@@ -76,16 +85,23 @@ void init() {
 	if (TTF_Init() != 0) {
 		throw SDLException("unable to initialize TTF lib");
 	}
+
+	int flags = IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP | IMG_INIT_JXL | IMG_INIT_AVIF;
+	if (IMG_Init(flags) == 0) {
+		throw SDLException("unable to initialize IMG lib");
+	}
 }
 
 void end() {
+	IMG_Quit();
 	TTF_Quit();
 	SDL_Quit();
 }
 
 }  // namespace window
 
-SDLException::SDLException(std::string message) : msg(std::move(message)) {
+SDLException::SDLException(std::string message)
+	: msg(std::move(message)) {
 	msg.append(": ").append(SDL_GetError());
 }
 
@@ -93,7 +109,8 @@ const char *SDLException::what() const noexcept {
 	return msg.c_str();
 }
 
-Color::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) : comp{r, g, b, a} {
+Color::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+	: comp{r, g, b, a} {
 }
 
 void Color::rgba(uint8_t rVal, uint8_t gVal, uint8_t bVal, uint8_t aVal) {

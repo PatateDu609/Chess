@@ -36,7 +36,7 @@ public:
 
 	[[nodiscard]] std::weak_ptr<SDL_Renderer> get_renderer();
 
-	void quit();
+	void									  quit();
 
 private:
 	struct SDLWindowDeleter {
@@ -54,7 +54,7 @@ private:
 	std::string									  name;
 	uint32_t									  w;
 	uint32_t									  h;
-	bool should_quit;
+	bool										  should_quit;
 };
 }  // namespace window
 
@@ -98,7 +98,7 @@ public:
 	void				  a(uint8_t val);
 	[[nodiscard]] uint8_t a() const;
 
-	explicit operator SDL_Color() const;
+	explicit			  operator SDL_Color() const;
 
 private:
 	std::array<uint8_t, 4> comp;

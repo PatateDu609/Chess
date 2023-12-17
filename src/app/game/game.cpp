@@ -133,6 +133,22 @@ Board::Board(graphics::window::Window &window, bool empty)
 	  is_flipped(false),
 	  case_size(static_cast<int>(std::min(win.size().first / 8, win.size().second / 8))) {
 	if (!empty) init_board();
+
+	init_piece_renderers();
+}
+
+void Board::init_piece_renderers() {
+	piece_renderers.clear();
+	piece_renderers.reserve(PieceKind::ALL_PIECE_KINDS.size());
+
+	using graphics::ImageRenderer;
+
+	const size_t size = static_cast<int>(case_size * 0.8);
+	for (const auto &kind : PieceKind::ALL_PIECE_KINDS) {
+		ImageRenderer renderer(kind.get_sprite_path(), size, size);
+
+		piece_renderers.emplace(kind, std::move(renderer));
+	}
 }
 
 void Board::init_board() {
@@ -176,9 +192,10 @@ void Board::init_board() {
 }
 
 void Board::flip() {
-	std::cout << "flipping board" << std::endl;
-	is_flipped = !is_flipped;
+	is_flipped				   = !is_flipped;
 	preRenderedBoardText.first = nullptr;
+
+
 }
 
 bool Board::flipped() const {
@@ -194,6 +211,11 @@ void Board::update() {
 }
 
 void Board::draw() const {
+	draw_chessboard();
+	draw_pieces();
+}
+
+void Board::draw_chessboard() const {
 	using graphics::Color;
 
 	auto  weak_renderer = win.get_renderer();
@@ -232,6 +254,36 @@ void Board::draw() const {
 }
 
 void Board::draw_pieces() const {
+	if (!is_valid()) {
+		std::cerr << "board not valid, can't draw pieces" << std::endl;
+		return;
+	}
+
+	auto weak_renderer = win.get_renderer();
+
+	if (auto renderer = weak_renderer.lock()) {
+		for (const auto &pair : boards) {
+			auto board = pair.second;
+
+			if (board.none()) continue;
+
+			auto kind			= pair.first;
+			auto piece_renderer = piece_renderers.at(kind);
+
+			for (size_t i = 0; i < board.size(); i++) {
+				if (!board[i]) continue;
+
+				size_t x	 = i % 8;
+				size_t y	 = i / 8;
+
+				auto  tex_X = static_cast<size_t>((static_cast<double>(x) * case_size) + (case_size * 0.1));
+				auto  tex_Y = static_cast<size_t>((static_cast<double>(y) * case_size) + (case_size * 0.1));
+
+				piece_renderer.set_coord(tex_X, tex_Y);
+				piece_renderer.render(renderer);
+			}
+		}
+	}
 }
 
 void Board::check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer) {

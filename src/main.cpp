@@ -19,15 +19,17 @@ int main() {
 		return EXIT_FAILURE;
 	}
 
-	graphics::window::Window win("Chess");
+	{
+		graphics::window::Window win("Chess");
 
-	try {
-		win.bind_app(std::make_unique<app::game::Chess>(win));
-		win.open();
-		win.run();
-	} catch (const std::exception& e) {
-		std::cerr << "caught exception: " << e.what() << std::endl;
-		return EXIT_FAILURE;
+		try {
+			win.bind_app(std::make_unique<app::game::Chess>(win));
+			win.open();
+			win.run();
+		} catch (const std::exception& e) {
+			std::cerr << "caught exception: " << e.what() << std::endl;
+			return EXIT_FAILURE;
+		}
 	}
 
 	graphics::window::end();

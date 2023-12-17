@@ -10,6 +10,8 @@ set(CMAKE_PREFIX_PATH
         "/Library/Frameworks/SDL2.framework/Resources/CMake"
         "/Library/Frameworks/SDL2_ttf.framework"
         "/Library/Frameworks/SDL2_ttf.framework/Resources/CMake"
+        "/Library/Frameworks/SDL2_image.framework"
+        "/Library/Frameworks/SDL2_image.framework/Resources/CMake"
         # These libraries are keg-only and not loaded into
         # the root prefix by default (to avoid clashes).
         "${HOMEBREW_PREFIX}/opt/llvm/lib/c++"

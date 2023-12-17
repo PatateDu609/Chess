@@ -7,6 +7,7 @@
 
 #include "app.hpp"
 #include "game/piece.hpp"
+#include "graphics/image.hpp"
 #include "graphics/text.hpp"
 #include "graphics/window.hpp"
 
@@ -75,29 +76,34 @@ public:
 
 	void			   update();
 	void			   draw() const;
-	void			   draw_pieces() const;
 
 private:
-	typedef std::bitset<64>					bitboard;
+	typedef std::bitset<64>												   bitboard;
+	typedef std::unordered_map<PieceKind, graphics::ImageRenderer> PieceRenderers;
+
+	struct PreRenderedBoardText {
+		std::vector<graphics::TextRenderer> numbers;
+		std::vector<graphics::TextRenderer> letters;
+	};
+
+	void									draw_pieces() const;
+	void									draw_chessboard() const;
 
 	[[nodiscard]] bool						is_valid() const;
 
 	void									dump_subboard(const PieceKind &kind) const;
 	void									dump_merged_board() const;
 
+	void									check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer);
+	void									init_piece_renderers();
+
 	graphics::window::Window			   &win;
 
 	std::unordered_map<PieceKind, bitboard> boards;
 	bool									is_flipped;
-
 	const int								case_size;
 
-	void									check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer);
-
-	struct PreRenderedBoardText {
-		std::vector<graphics::TextRenderer> numbers;
-		std::vector<graphics::TextRenderer> letters;
-	};
+	PieceRenderers							piece_renderers;
 
 	std::pair<std::shared_ptr<SDL_Renderer>, PreRenderedBoardText> preRenderedBoardText;
 };

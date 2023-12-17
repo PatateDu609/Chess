@@ -175,8 +175,10 @@ void Board::init_board() {
 	boards[PieceKind::BLACK_KING]		  = static_cast<uint64_t>(king_setup);
 }
 
-void Board::flip_board() {
+void Board::flip() {
+	std::cout << "flipping board" << std::endl;
 	is_flipped = !is_flipped;
+	preRenderedBoardText.first = nullptr;
 }
 
 bool Board::flipped() const {
@@ -229,6 +231,8 @@ void Board::draw() const {
 	}
 }
 
+void Board::draw_pieces() const {
+}
 
 void Board::check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer) {
 	if (renderer == preRenderedBoardText.first) {
@@ -424,10 +428,6 @@ Chess::Chess(graphics::window::Window &window)
 	  board(window, false) {
 }
 
-void Chess::flip_board() {
-	board.flip_board();
-}
-
 void Chess::update() {
 	board.update();
 }
@@ -437,9 +437,18 @@ void Chess::draw() const {
 }
 
 void Chess::handle_events(const SDL_Event &e) {
+	if (e.type == SDL_KEYDOWN) {
+		switch (e.key.keysym.sym) {
+			case SDLK_ESCAPE:
+				win.quit();
+				break;
 
+			case SDLK_f:
+				board.flip();
+				break;
+		}
+	}
 }
-
 
 }  // namespace app::game
 

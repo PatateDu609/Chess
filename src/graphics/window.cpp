@@ -8,7 +8,7 @@ namespace graphics {
 namespace window {
 
 Window::Window(std::string window_name, uint32_t width, uint32_t height)
-	: window(nullptr, SDLWindowDeleter()), renderer(), name(std::move(window_name)), w(width), h(height) {
+	: window(nullptr, SDLWindowDeleter()), renderer(), name(std::move(window_name)), w(width), h(height), should_quit(false) {
 }
 
 Window::~Window() {
@@ -30,15 +30,17 @@ std::weak_ptr<SDL_Renderer> Window::get_renderer() {
 	return {renderer};
 }
 
-void Window::run() {
-	bool quit = false;
+void Window::quit() {
+	should_quit = true;
+}
 
-	while (!quit) {
+void Window::run() {
+	while (!should_quit) {
 		SDL_Event e;
 
 		while (SDL_PollEvent(&e) != 0) {
 			if (e.type == SDL_QUIT) {
-				quit = true;
+				quit();
 			} else {
 				app->handle_events(e);
 			}

@@ -36,6 +36,8 @@ public:
 
 	[[nodiscard]] std::weak_ptr<SDL_Renderer> get_renderer();
 
+	void quit();
+
 private:
 	struct SDLWindowDeleter {
 		void operator()(SDL_Window *win) const;
@@ -52,6 +54,7 @@ private:
 	std::string									  name;
 	uint32_t									  w;
 	uint32_t									  h;
+	bool should_quit;
 };
 }  // namespace window
 

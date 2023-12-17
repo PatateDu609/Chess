@@ -68,13 +68,14 @@ public:
 	Board			  &operator=(const Board &) = delete;
 
 	void			   init_board();
-	void			   flip_board();
+	void			   flip();
 	[[nodiscard]] bool flipped() const;
 
 	void			   dump(bool merged = false) const;
 
 	void			   update();
 	void			   draw() const;
+	void			   draw_pieces() const;
 
 private:
 	typedef std::bitset<64>					bitboard;
@@ -109,8 +110,6 @@ public:
 	Chess &operator=(const Chess &) = delete;
 
 	explicit Chess(graphics::window::Window &window);
-
-	void flip_board();
 
 protected:
 	void draw() const override;

@@ -64,21 +64,20 @@ class Board {
 public:
 	explicit Board(graphics::window::Window &window, bool empty = false);
 
-	~Board()									= default;
-	Board(const Board &)						= delete;
-	Board			  &operator=(const Board &) = delete;
+	~Board()						= default;
+	Board(const Board &)			= delete;
+	Board &operator=(const Board &) = delete;
 
-	void			   init_board();
-	void			   flip();
-	[[nodiscard]] bool flipped() const;
+	void   init_board(bool flip = false);
+	void   flip();
 
-	void			   dump(bool merged = false) const;
+	void   dump(bool merged = false) const;
 
-	void			   update();
-	void			   draw() const;
+	void   update();
+	void   draw() const;
 
 private:
-	typedef std::bitset<64>												   bitboard;
+	typedef std::bitset<64>										   bitboard;
 	typedef std::unordered_map<PieceKind, graphics::ImageRenderer> PieceRenderers;
 
 	struct PreRenderedBoardText {
@@ -100,10 +99,11 @@ private:
 	graphics::window::Window			   &win;
 
 	std::unordered_map<PieceKind, bitboard> boards;
-	bool									is_flipped;
 	const int								case_size;
 
 	PieceRenderers							piece_renderers;
+	bool									is_flipped;
+	bool									base_game_pos;
 
 	std::pair<std::shared_ptr<SDL_Renderer>, PreRenderedBoardText> preRenderedBoardText;
 };

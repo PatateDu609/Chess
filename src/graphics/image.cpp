@@ -28,15 +28,6 @@ void ImageRenderer::render(const std::shared_ptr<SDL_Renderer> &renderer) const 
 	}
 }
 
-void ImageRenderer::set_rect(const SDL_Rect &sdlRect) {
-	rect = sdlRect;
-}
-
-void ImageRenderer::set_rect(size_t x, size_t y, size_t w, size_t h) {
-	set_size(w, h);
-	set_coord(x, y);
-}
-
 void ImageRenderer::set_size(size_t w, size_t h) {
 	rect.w = static_cast<int>(w);
 	rect.h = static_cast<int>(h);

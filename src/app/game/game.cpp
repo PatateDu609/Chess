@@ -2,6 +2,7 @@
 
 #include <SDL_ttf.h>
 
+#include <bit>
 #include <iostream>
 #include <iterator>
 #include <numeric>
@@ -130,9 +131,10 @@ bool Coord::is_valid(std::string algebraic) {
 
 Board::Board(graphics::window::Window &window, bool empty)
 	: win(window),
+	  base_game_pos(false),
 	  is_flipped(false),
 	  case_size(static_cast<int>(std::min(win.size().first / 8, win.size().second / 8))) {
-	if (!empty) init_board();
+	if (!empty) init_board(false);
 
 	init_piece_renderers();
 }
@@ -151,55 +153,66 @@ void Board::init_piece_renderers() {
 	}
 }
 
-void Board::init_board() {
+void Board::init_board(bool flip) {
 	for (auto &pair : boards) {
 		pair.second = 0;
 	}
 
+	is_flipped	  = flip;
+	base_game_pos = true;
+
 	uint64_t				 tmp_board;
-	static constexpr uint8_t pawn_setup	  = 0b11111111;
-	static constexpr uint8_t rook_setup	  = 0b10000001;
-	static constexpr uint8_t knight_setup = 0b01000010;
-	static constexpr uint8_t bishop_setup = 0b00100100;
-	static constexpr uint8_t king_setup	  = 0b00010000;
-	static constexpr uint8_t queen_setup  = 0b00001000;
+	static constexpr uint8_t pawn_setup			= 0b11111111;
+	static constexpr uint8_t rook_setup			= 0b10000001;
+	static constexpr uint8_t knight_setup		= 0b01000010;
+	static constexpr uint8_t bishop_setup		= 0b00100100;
+	const uint8_t			 king_setup			= is_flipped ? 0b00001000 : 0b00010000;
+	const uint8_t			 queen_setup		= is_flipped ? 0b00010000 : 0b00001000;
 
-	tmp_board							  = static_cast<uint64_t>(pawn_setup) << 8;
-	boards[PieceKind::BLACK_PAWN]		  = tmp_board;
-	tmp_board							  = static_cast<uint64_t>(pawn_setup) << 48;
-	boards[PieceKind::WHITE_PAWN]		  = tmp_board;
+	const int				 white_pawns_shift	= is_flipped ? 8 : 48;
+	const int				 black_pawns_shift	= is_flipped ? 48 : 8;
 
-	tmp_board							  = static_cast<uint64_t>(knight_setup);
-	boards[PieceKind::BLACK_KNIGHT]		  = tmp_board;
-	tmp_board							  = static_cast<uint64_t>(knight_setup) << 56;
-	boards[PieceKind::WHITE_KNIGHT]		  = tmp_board;
+	const int				 white_pieces_shift = white_pawns_shift == 48 ? 56 : 0;
+	const int				 black_pieces_shift = black_pawns_shift == 48 ? 56 : 0;
 
-	tmp_board							  = static_cast<uint64_t>(bishop_setup);
-	boards[PieceKind::BLACK_BISHOP]		  = tmp_board;
-	tmp_board							  = static_cast<uint64_t>(bishop_setup) << 56;
-	boards[PieceKind::WHITE_BISHOP]		  = tmp_board;
+	tmp_board									= static_cast<uint64_t>(pawn_setup) << black_pawns_shift;
+	boards[PieceKind::BLACK_PAWN]				= tmp_board;
+	tmp_board									= static_cast<uint64_t>(pawn_setup) << white_pawns_shift;
+	boards[PieceKind::WHITE_PAWN]				= tmp_board;
 
-	tmp_board							  = static_cast<uint64_t>(rook_setup);
-	boards[PieceKind::BLACK_ROOK]		  = tmp_board;
-	tmp_board							  = static_cast<uint64_t>(rook_setup) << 56;
-	boards[PieceKind::WHITE_ROOK]		  = tmp_board;
+	tmp_board									= static_cast<uint64_t>(knight_setup) << black_pieces_shift;
+	boards[PieceKind::BLACK_KNIGHT]				= tmp_board;
+	tmp_board									= static_cast<uint64_t>(knight_setup) << white_pieces_shift;
+	boards[PieceKind::WHITE_KNIGHT]				= tmp_board;
 
-	boards[PieceKind::WHITE_QUEEN]		  = static_cast<uint64_t>(queen_setup) << 56;
-	boards[PieceKind::WHITE_KING]		  = static_cast<uint64_t>(king_setup) << 56;
+	tmp_board									= static_cast<uint64_t>(bishop_setup) << black_pieces_shift;
+	boards[PieceKind::BLACK_BISHOP]				= tmp_board;
+	tmp_board									= static_cast<uint64_t>(bishop_setup) << white_pieces_shift;
+	boards[PieceKind::WHITE_BISHOP]				= tmp_board;
 
-	boards[PieceKind::BLACK_QUEEN]		  = static_cast<uint64_t>(queen_setup);
-	boards[PieceKind::BLACK_KING]		  = static_cast<uint64_t>(king_setup);
+	tmp_board									= static_cast<uint64_t>(rook_setup) << black_pieces_shift;
+	boards[PieceKind::BLACK_ROOK]				= tmp_board;
+	tmp_board									= static_cast<uint64_t>(rook_setup) << white_pieces_shift;
+	boards[PieceKind::WHITE_ROOK]				= tmp_board;
+
+	boards[PieceKind::WHITE_QUEEN]				= static_cast<uint64_t>(queen_setup) << white_pieces_shift;
+	boards[PieceKind::WHITE_KING]				= static_cast<uint64_t>(king_setup) << white_pieces_shift;
+
+	boards[PieceKind::BLACK_QUEEN]				= static_cast<uint64_t>(queen_setup) << black_pieces_shift;
+	boards[PieceKind::BLACK_KING]				= static_cast<uint64_t>(king_setup) << black_pieces_shift;
 }
 
 void Board::flip() {
 	is_flipped				   = !is_flipped;
 	preRenderedBoardText.first = nullptr;
 
-
-}
-
-bool Board::flipped() const {
-	return is_flipped;
+	if (base_game_pos) {
+		init_board(is_flipped);
+	} else {
+		for (auto &pair : boards) {
+			pair.second = std::byteswap(pair.second.to_ullong());
+		}
+	}
 }
 
 void Board::update() {
@@ -276,8 +289,8 @@ void Board::draw_pieces() const {
 				size_t x	 = i % 8;
 				size_t y	 = i / 8;
 
-				auto  tex_X = static_cast<size_t>((static_cast<double>(x) * case_size) + (case_size * 0.1));
-				auto  tex_Y = static_cast<size_t>((static_cast<double>(y) * case_size) + (case_size * 0.1));
+				auto   tex_X = static_cast<size_t>((static_cast<double>(x) * case_size) + (case_size * 0.1));
+				auto   tex_Y = static_cast<size_t>((static_cast<double>(y) * case_size) + (case_size * 0.1));
 
 				piece_renderer.set_coord(tex_X, tex_Y);
 				piece_renderer.render(renderer);
@@ -300,7 +313,7 @@ void Board::check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer) {
 
 	preRenderedBoardText.first		  = renderer;
 	PreRenderedBoardText &preRendered = preRenderedBoardText.second;
-	const char			 *letters_str = flipped() ? "hgfedcba" : "abcdefgh";
+	const char			 *letters_str = is_flipped ? "hgfedcba" : "abcdefgh";
 
 	preRendered.numbers.reserve(8);
 	preRendered.letters.reserve(8);
@@ -312,7 +325,7 @@ void Board::check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer) {
 
 		preRendered.numbers.back().set_coord(static_cast<size_t>(.06 * case_size),
 			static_cast<size_t>((static_cast<double>(i) + 0.04) * case_size));
-		preRendered.numbers.back().set_content(std::to_string(flipped() ? i + 1 : 8 - i));
+		preRendered.numbers.back().set_content(std::to_string(is_flipped ? i + 1 : 8 - i));
 		preRendered.numbers.back().set_color(i % 2 ? Color::LIGHT_SQUARE : Color::DARK_SQUARE);
 
 		preRendered.numbers.back().reload_text();

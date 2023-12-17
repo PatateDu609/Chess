@@ -90,6 +90,8 @@ void init() {
 	if (IMG_Init(flags) == 0) {
 		throw SDLException("unable to initialize IMG lib");
 	}
+
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2");
 }
 
 void end() {

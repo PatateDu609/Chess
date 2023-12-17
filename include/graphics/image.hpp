@@ -21,9 +21,6 @@ public:
 
 	void		   render(const std::shared_ptr<SDL_Renderer> &renderer) const;
 
-	void		   set_rect(const SDL_Rect &sdlRect);
-	void		   set_rect(size_t x, size_t y, size_t w, size_t h);
-
 	void		   set_size(size_t w, size_t h);
 	void		   set_coord(size_t x, size_t y);
 

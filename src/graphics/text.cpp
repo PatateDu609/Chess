@@ -45,7 +45,6 @@ void TextRenderer::set_coord(size_t x, size_t y) {
 
 void TextRenderer::reload_text() {
 	if (auto f = font->get().lock()) {
-
 		auto sdlColor = static_cast<SDL_Color>(color);
 
 		text_surface.reset(TTF_RenderText_Blended(f.get(), content.c_str(), sdlColor), SDL_FreeSurface);

@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "graphics/text.hpp"
-#include "resources.hpp"
 
 namespace app::game {
 

@@ -2,6 +2,7 @@
 #define CHESS_GAME_HPP
 
 #include <bitset>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -31,8 +32,8 @@ public:
 		std::string msg;
 	};
 
-	Coord(uint8_t x, uint8_t y);
-	explicit Coord(std::string algebraic_form);
+	Coord(bool board_flipped, uint8_t x, uint8_t y);
+	explicit Coord(bool board_flipped, std::string algebraic_form);
 
 	Coord(const Coord &)									  = default;
 	Coord							&operator=(const Coord &) = default;
@@ -49,32 +50,40 @@ public:
 	void							 full_dump() const;
 
 private:
-	void		update_algebraic();
-	void		update_coord_couple();
+	void				 update_algebraic();
+	void				 update_coord_couple();
 
-	static bool is_valid(uint8_t x, uint8_t y);
-	static bool is_valid(std::string algebraic);
+	static bool			 is_valid(uint8_t x, uint8_t y);
+	static bool			 is_valid(std::string algebraic);
 
-	std::string _algebraic;
-	uint8_t		_x;
-	uint8_t		_y;
+	std::string			 _algebraic;
+	uint8_t				 _x;
+	uint8_t				 _y;
+	bool				 _board_flipped;
+
+	friend std::ostream &operator<<(std::ostream &os, const app::game::Coord &coord);
 };
 
 class Board {
 public:
 	explicit Board(graphics::window::Window &window, bool empty = false);
 
-	~Board()						= default;
-	Board(const Board &)			= delete;
-	Board &operator=(const Board &) = delete;
+	~Board()									= default;
+	Board(const Board &)						= delete;
+	Board			  &operator=(const Board &) = delete;
 
-	void   init_board(bool flip = false);
-	void   flip();
+	void			   init_board(bool flip = false);
+	void			   flip();
 
-	void   dump(bool merged = false) const;
+	void			   dump(bool merged = false) const;
 
-	void   update();
-	void   draw() const;
+	void			   select(size_t x, size_t y);
+	void			   unselect();
+	[[nodiscard]] bool has_selected() const;
+	void			   move_pointer_piece(size_t x, size_t y);
+
+	void			   update();
+	void			   draw() const;
 
 private:
 	typedef std::bitset<64>										   bitboard;
@@ -85,8 +94,19 @@ private:
 		std::vector<graphics::TextRenderer> letters;
 	};
 
+	struct SelectedPiece {
+		Coord					coord;
+		PieceKind				kind;
+		SDL_Rect				rect;
+
+		graphics::window::Coord win_coord;
+		ssize_t					diff_x;
+		ssize_t					diff_y;
+	};
+
 	void									draw_pieces() const;
 	void									draw_chessboard() const;
+	void									draw_selected() const;
 
 	[[nodiscard]] bool						is_valid() const;
 
@@ -96,10 +116,14 @@ private:
 	void									check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer);
 	void									init_piece_renderers();
 
+	[[nodiscard]] graphics::window::Coord	gen_sprite_coord(size_t x, size_t y) const;
+	[[nodiscard]] size_t					get_piece_size() const;
+
 	graphics::window::Window			   &win;
 
 	std::unordered_map<PieceKind, bitboard> boards;
 	const int								case_size;
+	std::optional<SelectedPiece>			selected;
 
 	PieceRenderers							piece_renderers;
 	bool									is_flipped;
@@ -128,7 +152,5 @@ private:
 };
 
 }  // namespace app::game
-
-std::ostream &operator<<(std::ostream &os, const app::game::Coord &coord);
 
 #endif	// CHESS_GAME_HPP

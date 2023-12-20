@@ -55,8 +55,9 @@ const char *Coord::InvalidCoordException::what() const noexcept {
 	return msg.c_str();
 }
 
-Coord::Coord(uint8_t x, uint8_t y)
-	: _x(x),
+Coord::Coord(bool board_flipped, uint8_t x, uint8_t y)
+	: _board_flipped(board_flipped),
+	  _x(x),
 	  _y(y) {
 	if (!is_valid(x, y)) {
 		throw InvalidCoordException(x, y);
@@ -65,10 +66,11 @@ Coord::Coord(uint8_t x, uint8_t y)
 	update_algebraic();
 }
 
-Coord::Coord(std::string algebraic_form)
+Coord::Coord(bool board_flipped, std::string algebraic_form)
 	: _algebraic(std::move(algebraic_form)),
 	  _x(0),
-	  _y(0) {
+	  _y(0),
+	  _board_flipped(board_flipped) {
 	if (!is_valid(_algebraic)) {
 		throw InvalidCoordException(algebraic_form);
 	}
@@ -127,6 +129,17 @@ bool Coord::is_valid(std::string algebraic) {
 
 	return ('a' <= letter && letter <= 'h') && ('1' <= nb && nb <= '8');
 }
+std::ostream &operator<<(std::ostream &os, const Coord &coord) {
+	os << coord.algebraic() << " (x = " << static_cast<int>(coord.x())
+	   << ", y = " << static_cast<int>(coord.y()) << "), board flipped ? ";
+	os << std::boolalpha << coord._board_flipped << std::noboolalpha;
+
+	return os;
+}
+
+size_t Board::get_piece_size() const {
+	return static_cast<size_t>(case_size * 0.8);
+}
 
 Board::Board(graphics::window::Window &window, bool empty)
 	: win(window),
@@ -144,7 +157,7 @@ void Board::init_piece_renderers() {
 
 	using graphics::ImageRenderer;
 
-	const size_t size = static_cast<int>(case_size * 0.8);
+	const size_t size = get_piece_size();
 	for (const auto &kind : PieceKind::ALL_PIECE_KINDS) {
 		ImageRenderer renderer(kind.get_sprite_path(), size, size);
 
@@ -225,6 +238,7 @@ void Board::update() {
 void Board::draw() const {
 	draw_chessboard();
 	draw_pieces();
+	draw_selected();
 }
 
 void Board::draw_chessboard() const {
@@ -265,6 +279,14 @@ void Board::draw_chessboard() const {
 	}
 }
 
+graphics::window::Coord Board::gen_sprite_coord(size_t x, size_t y) const {
+	const double shift = case_size * 0.1;
+	return {
+		.x = static_cast<size_t>((static_cast<double>(x) * case_size) + shift),
+		.y = static_cast<size_t>((static_cast<double>(y) * case_size) + shift),
+	};
+}
+
 void Board::draw_pieces() const {
 	if (!is_valid()) {
 		std::cerr << "board not valid, can't draw pieces" << std::endl;
@@ -285,16 +307,32 @@ void Board::draw_pieces() const {
 			for (size_t i = 0; i < board.size(); i++) {
 				if (!board[i]) continue;
 
-				size_t x	 = i % 8;
-				size_t y	 = i / 8;
+				size_t x = i % 8;
+				size_t y = i / 8;
 
-				auto   tex_X = static_cast<size_t>((static_cast<double>(x) * case_size) + (case_size * 0.1));
-				auto   tex_Y = static_cast<size_t>((static_cast<double>(y) * case_size) + (case_size * 0.1));
+				if (selected.has_value() && x == selected->coord.x() && y == selected->coord.y()) {
+					continue;
+				}
 
-				piece_renderer.set_coord(tex_X, tex_Y);
+				auto tex_coord = gen_sprite_coord(x, y);
+				piece_renderer.set_coord(tex_coord.x, tex_coord.y);
 				piece_renderer.render(renderer);
 			}
 		}
+	}
+}
+
+void Board::draw_selected() const {
+	if (!selected) return;
+
+	if (auto renderer = win.get_renderer().lock()) {
+		graphics::ImageRenderer img_renderer = piece_renderers.at(selected->kind);
+
+		img_renderer.set_coord(selected->rect.x, selected->rect.y);
+		img_renderer.set_size(selected->rect.w, selected->rect.h);
+		img_renderer.render(renderer);
+	} else {
+		throw std::runtime_error("couldn't lock renderer");
 	}
 }
 
@@ -487,6 +525,54 @@ bool Board::is_valid() const {
 	return final.count() == ref;
 }
 
+void Board::select(size_t x, size_t y) {
+	Coord c(is_flipped, x / case_size, y / case_size);
+	std::cout << "board coordinates: " << c << std::endl;
+
+	size_t bitboardCoord = c.y() * 8 + c.x();
+	auto   piece_size	 = static_cast<int>(get_piece_size());
+	for (const auto &pair : boards) {
+		if (!pair.second[bitboardCoord]) {
+			continue;
+		}
+
+		selected = SelectedPiece{
+			.coord	   = c,
+			.kind	   = pair.first,
+			.win_coord = graphics::window::Coord{.x = x, .y = y},
+		};
+
+		auto sprite_coord = gen_sprite_coord(c.x(), c.y());
+
+		selected->rect.x  = static_cast<int>(sprite_coord.x);
+		selected->rect.y  = static_cast<int>(sprite_coord.y);
+		selected->rect.w  = piece_size;
+		selected->rect.h  = piece_size;
+
+		selected->diff_x  = static_cast<ssize_t>(selected->win_coord.x - selected->rect.x);
+		selected->diff_y  = static_cast<ssize_t>(selected->win_coord.y - selected->rect.y);
+
+		break;
+	}
+}
+
+void Board::unselect() {
+	selected.reset();
+}
+
+bool Board::has_selected() const {
+	return selected.has_value();
+}
+
+void Board::move_pointer_piece(size_t x, size_t y) {
+	using graphics::ImageRenderer;
+
+	if (!has_selected()) return;
+
+	selected->rect.x = static_cast<int>(x - selected->diff_x);
+	selected->rect.y = static_cast<int>(y - selected->diff_y);
+}
+
 Chess::Chess(graphics::window::Window &window)
 	: win(window),
 	  board(window, false) {
@@ -501,22 +587,39 @@ void Chess::draw() const {
 }
 
 void Chess::handle_events(const SDL_Event &e) {
-	if (e.type == SDL_KEYDOWN) {
-		switch (e.key.keysym.sym) {
-			case SDLK_ESCAPE:
-				win.quit();
-				break;
+	switch (e.type) {
+		case SDL_KEYDOWN:
+			switch (e.key.keysym.sym) {
+				case SDLK_ESCAPE:
+					win.quit();
+					break;
 
-			case SDLK_f:
-				board.flip();
-				break;
-		}
+				case SDLK_f:
+					board.flip();
+					break;
+			}
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			switch (e.button.button) {
+				case SDL_BUTTON_LEFT:
+					board.select(e.button.x, e.button.y);
+					break;
+			}
+			break;
+		case SDL_MOUSEMOTION:
+			if (board.has_selected()) {
+				board.move_pointer_piece(e.motion.x, e.motion.y);
+			}
+
+			break;
+		case SDL_MOUSEBUTTONUP:
+			switch (e.button.button) {
+				case SDL_BUTTON_LEFT:
+					board.unselect();
+					break;
+			}
+			break;
 	}
 }
 
 }  // namespace app::game
-
-std::ostream &operator<<(std::ostream &os, const app::game::Coord &coord) {
-	return os << coord.algebraic() << " (x = " << static_cast<int>(coord.x())
-			  << ", y = " << static_cast<int>(coord.y()) << ")";
-}

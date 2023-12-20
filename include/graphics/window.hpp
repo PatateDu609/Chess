@@ -16,6 +16,11 @@ namespace window {
 void		 init();
 void		 end();
 
+struct Coord final {
+	size_t x;
+	size_t y;
+};
+
 class Window final {
 public:
 	Window()						  = delete;

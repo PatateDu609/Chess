@@ -323,12 +323,23 @@ void Board::draw_pieces() const {
 }
 
 void Board::draw_selected() const {
+	using std::max;
+
 	if (!selected) return;
+
+	auto win_size = win.size();
 
 	if (auto renderer = win.get_renderer().lock()) {
 		graphics::ImageRenderer img_renderer = piece_renderers.at(selected->kind);
 
-		img_renderer.set_coord(selected->rect.x, selected->rect.y);
+		size_t					x = 0, y = 0;
+		x = max(0, selected->rect.x);
+		y = max(0, selected->rect.y);
+
+		if (selected->rect.x + selected->rect.w > win_size.first) x = win_size.first - selected->rect.w;
+		if (selected->rect.y + selected->rect.h > win_size.second) y = win_size.first - selected->rect.h;
+
+		img_renderer.set_coord(x, y);
 		img_renderer.set_size(selected->rect.w, selected->rect.h);
 		img_renderer.render(renderer);
 	} else {
@@ -537,9 +548,8 @@ void Board::select(size_t x, size_t y) {
 		}
 
 		selected = SelectedPiece{
-			.coord	   = c,
-			.kind	   = pair.first,
-			.win_coord = graphics::window::Coord{.x = x, .y = y},
+			.coord = c,
+			.kind  = pair.first,
 		};
 
 		auto sprite_coord = gen_sprite_coord(c.x(), c.y());
@@ -549,8 +559,8 @@ void Board::select(size_t x, size_t y) {
 		selected->rect.w  = piece_size;
 		selected->rect.h  = piece_size;
 
-		selected->diff_x  = static_cast<ssize_t>(selected->win_coord.x - selected->rect.x);
-		selected->diff_y  = static_cast<ssize_t>(selected->win_coord.y - selected->rect.y);
+		selected->diff_x  = static_cast<ssize_t>(x - selected->rect.x);
+		selected->diff_y  = static_cast<ssize_t>(y - selected->rect.y);
 
 		break;
 	}
@@ -564,10 +574,13 @@ bool Board::has_selected() const {
 	return selected.has_value();
 }
 
-void Board::move_pointer_piece(size_t x, size_t y) {
+void Board::move_pointer_piece(int x, int y) {
 	using graphics::ImageRenderer;
 
 	if (!has_selected()) return;
+
+	x				 = std::max(x, 0);
+	y				 = std::max(y, 0);
 
 	selected->rect.x = static_cast<int>(x - selected->diff_x);
 	selected->rect.y = static_cast<int>(y - selected->diff_y);

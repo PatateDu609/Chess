@@ -80,7 +80,7 @@ public:
 	void			   select(size_t x, size_t y);
 	void			   unselect();
 	[[nodiscard]] bool has_selected() const;
-	void			   move_pointer_piece(size_t x, size_t y);
+	void			   move_pointer_piece(int x, int y);
 
 	void			   update();
 	void			   draw() const;
@@ -99,7 +99,6 @@ private:
 		PieceKind				kind;
 		SDL_Rect				rect;
 
-		graphics::window::Coord win_coord;
 		ssize_t					diff_x;
 		ssize_t					diff_y;
 	};

@@ -566,7 +566,19 @@ void Board::select(size_t x, size_t y) {
 	}
 }
 
-void Board::unselect() {
+void Board::drop_selected(size_t x, size_t y) {
+	if (!has_selected()) return;
+
+	x					 /= case_size;
+	y					 /= case_size;
+
+	bitboard &board		  = boards[selected->kind];
+	size_t	  origin_idx  = selected->coord.y() * 8 + selected->coord.x();
+	size_t	  target_idx  = y * 8 + x;
+
+	board[origin_idx]	  = false;
+	board[target_idx]	  = true;
+
 	selected.reset();
 }
 
@@ -628,7 +640,7 @@ void Chess::handle_events(const SDL_Event &e) {
 		case SDL_MOUSEBUTTONUP:
 			switch (e.button.button) {
 				case SDL_BUTTON_LEFT:
-					board.unselect();
+					board.drop_selected(e.button.x, e.button.y);
 					break;
 			}
 			break;

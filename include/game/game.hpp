@@ -78,7 +78,7 @@ public:
 	void			   dump(bool merged = false) const;
 
 	void			   select(size_t x, size_t y);
-	void			   unselect();
+	void			   drop_selected(size_t x, size_t y);
 	[[nodiscard]] bool has_selected() const;
 	void			   move_pointer_piece(int x, int y);
 
@@ -95,12 +95,12 @@ private:
 	};
 
 	struct SelectedPiece {
-		Coord					coord;
-		PieceKind				kind;
-		SDL_Rect				rect;
+		Coord	  coord;
+		PieceKind kind;
+		SDL_Rect  rect;
 
-		ssize_t					diff_x;
-		ssize_t					diff_y;
+		ssize_t	  diff_x;
+		ssize_t	  diff_y;
 	};
 
 	void									draw_pieces() const;

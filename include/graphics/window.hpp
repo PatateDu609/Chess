@@ -111,4 +111,4 @@ private:
 
 }  // namespace graphics
 
-#endif	// CHESS_WINDOW_HPP
+#endif	// CHESS_INCLUDE_GRAPHICS_WINDOW_HPP

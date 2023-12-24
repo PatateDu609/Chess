@@ -31,4 +31,4 @@ std::shared_ptr<T> Singleton<T>::_instance = nullptr;
 
 }  // namespace utils
 
-#endif	// CHESS_UTILS_HPP
+#endif	// CHESS_INCLUDE_UTILS_HPP

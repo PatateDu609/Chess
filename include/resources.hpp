@@ -92,4 +92,4 @@ extern std::shared_ptr<ResourceManager<Image> > image_manager;
 
 }  // namespace app::resources
 
-#endif	// CHESS_RESOURCES_HPP
+#endif	// CHESS_INCLUDE_RESOURCES_HPP

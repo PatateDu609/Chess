@@ -59,4 +59,4 @@ struct std::hash<app::game::PieceKind> {
 	}
 };
 
-#endif	// CHESS_PIECE_HPP
+#endif	// CHESS_INCLUDE_GAME_PIECE_HPP

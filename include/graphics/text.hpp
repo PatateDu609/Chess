@@ -1,5 +1,5 @@
-#ifndef CHESS_TEXT_HPP
-#define CHESS_TEXT_HPP
+#ifndef CHESS_INCLUDE_GRAPHICS_TEXT_HPP
+#define CHESS_INCLUDE_GRAPHICS_TEXT_HPP
 
 #include <filesystem>
 
@@ -44,4 +44,4 @@ private:
 
 }  // namespace graphics
 
-#endif	// CHESS_TEXT_HPP
+#endif	// CHESS_INCLUDE_GRAPHICS_TEXT_HPP

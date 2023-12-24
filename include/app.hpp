@@ -25,4 +25,4 @@ protected:
 };
 }  // namespace app
 
-#endif	// CHESS_APP_HPP
+#endif	// CHESS_INCLUDE_APP_HPP

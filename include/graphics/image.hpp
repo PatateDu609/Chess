@@ -34,4 +34,4 @@ private:
 
 }  // namespace graphics
 
-#endif	// CHESS_IMAGE_HPP
+#endif	// CHESS_INCLUDE_GRAPHICS_IMAGE_HPP

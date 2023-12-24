@@ -100,4 +100,4 @@ private:
 
 }  // namespace app::game
 
-#endif	// CHESS_GAME_HPP
+#endif	// CHESS_INCLUDE_GAME_GAME_HPP

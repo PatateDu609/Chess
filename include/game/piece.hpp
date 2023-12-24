@@ -1,5 +1,5 @@
-#ifndef CHESS_PIECE_HPP
-#define CHESS_PIECE_HPP
+#ifndef CHESS_INCLUDE_GAME_PIECE_HPP
+#define CHESS_INCLUDE_GAME_PIECE_HPP
 
 #include <filesystem>
 #include <string>
@@ -9,19 +9,19 @@ namespace app::game {
 
 class PieceKind final {
 public:
-	static const PieceKind BLACK_PAWN;
-	static const PieceKind BLACK_KNIGHT;
-	static const PieceKind BLACK_BISHOP;
-	static const PieceKind BLACK_ROOK;
-	static const PieceKind BLACK_QUEEN;
-	static const PieceKind BLACK_KING;
+	static const PieceKind				BLACK_PAWN;
+	static const PieceKind				BLACK_KNIGHT;
+	static const PieceKind				BLACK_BISHOP;
+	static const PieceKind				BLACK_ROOK;
+	static const PieceKind				BLACK_QUEEN;
+	static const PieceKind				BLACK_KING;
 
-	static const PieceKind WHITE_PAWN;
-	static const PieceKind WHITE_KNIGHT;
-	static const PieceKind WHITE_BISHOP;
-	static const PieceKind WHITE_ROOK;
-	static const PieceKind WHITE_QUEEN;
-	static const PieceKind WHITE_KING;
+	static const PieceKind				WHITE_PAWN;
+	static const PieceKind				WHITE_KNIGHT;
+	static const PieceKind				WHITE_BISHOP;
+	static const PieceKind				WHITE_ROOK;
+	static const PieceKind				WHITE_QUEEN;
+	static const PieceKind				WHITE_KING;
 
 	static const std::vector<PieceKind> ALL_PIECE_KINDS;
 
@@ -34,7 +34,7 @@ public:
 	[[nodiscard]] std::string			get_algebraic_name() const;
 	[[nodiscard]] std::filesystem::path get_sprite_path() const;
 
-	bool								operator==(const PieceKind &other) const;
+	bool								operator==(const PieceKind& other) const;
 
 private:
 	std::string _name;
@@ -50,7 +50,7 @@ std::ostream& operator<<(std::ostream& os, const app::game::PieceKind& kind);
 
 template <>
 struct std::hash<app::game::PieceKind> {
-	std::size_t operator()(const app::game::PieceKind &a) const {
+	std::size_t operator()(const app::game::PieceKind& a) const {
 		using std::hash;
 		using std::size_t;
 		using std::string;

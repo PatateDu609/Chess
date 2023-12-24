@@ -1,5 +1,5 @@
-#ifndef CHESS_UTILS_HPP
-#define CHESS_UTILS_HPP
+#ifndef CHESS_INCLUDE_UTILS_HPP
+#define CHESS_INCLUDE_UTILS_HPP
 
 #include <memory>
 

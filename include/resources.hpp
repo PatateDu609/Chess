@@ -1,5 +1,5 @@
-#ifndef CHESS_RESOURCES_HPP
-#define CHESS_RESOURCES_HPP
+#ifndef CHESS_INCLUDE_RESOURCES_HPP
+#define CHESS_INCLUDE_RESOURCES_HPP
 
 #include <SDL_image.h>
 #include <SDL_ttf.h>
@@ -81,8 +81,8 @@ private:
 
 	std::filesystem::path		 filename;
 	std::shared_ptr<SDL_Surface> image;
-	size_t w;
-	size_t h;
+	size_t						 w;
+	size_t						 h;
 
 	friend ResourceManager<Image>;
 };

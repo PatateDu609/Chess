@@ -1,5 +1,5 @@
-#ifndef CHESS_APP_HPP
-#define CHESS_APP_HPP
+#ifndef CHESS_INCLUDE_APP_HPP
+#define CHESS_INCLUDE_APP_HPP
 
 #include <SDL.h>
 

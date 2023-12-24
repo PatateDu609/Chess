@@ -27,12 +27,11 @@ public:
 	void		  set_color(const graphics::Color &col);
 	void		  set_coord(size_t x, size_t y);
 
-	void						  reload_text();
+	void		  reload_text();
 
 private:
 	using Font		  = app::resources::Font;
 	using FontManager = app::resources::ResourceManager<Font>;
-
 
 	std::shared_ptr<Font>		  font;
 	std::string					  content;

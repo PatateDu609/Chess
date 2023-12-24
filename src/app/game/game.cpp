@@ -102,8 +102,11 @@ void Coord::y(uint8_t val) {
 	_y = val;
 }
 
-void Coord::full_dump() const {
-	std::cout << algebraic() << " (x = " << static_cast<int>(x()) << ", y = " << static_cast<int>(y()) << ")";
+std::string Coord::to_string(bool full) const {
+	std::ostringstream oss;
+
+	oss << algebraic() << " (x = " << static_cast<int>(x()) << ", y = " << static_cast<int>(y()) << ")";
+	return oss.str();
 }
 
 void Coord::update_algebraic() {
@@ -129,6 +132,15 @@ bool Coord::is_valid(std::string algebraic) {
 
 	return ('a' <= letter && letter <= 'h') && ('1' <= nb && nb <= '8');
 }
+
+bool Coord::operator==(const Coord &other) const {
+	return algebraic() == other.algebraic();
+}
+
+bool Coord::operator!=(const Coord &other) const {
+	return !(*this == other);
+}
+
 std::ostream &operator<<(std::ostream &os, const Coord &coord) {
 	os << coord.algebraic() << " (x = " << static_cast<int>(coord.x())
 	   << ", y = " << static_cast<int>(coord.y()) << "), board flipped ? ";
@@ -137,32 +149,10 @@ std::ostream &operator<<(std::ostream &os, const Coord &coord) {
 	return os;
 }
 
-size_t Board::get_piece_size() const {
-	return static_cast<size_t>(case_size * 0.8);
-}
-
-Board::Board(graphics::window::Window &window, bool empty)
-	: win(window),
-	  base_game_pos(false),
-	  is_flipped(false),
-	  case_size(static_cast<int>(std::min(win.size().first / 8, win.size().second / 8))) {
+Board::Board(bool empty)
+	: base_game_pos(false),
+	  is_flipped(false) {
 	if (!empty) init_board(false);
-
-	init_piece_renderers();
-}
-
-void Board::init_piece_renderers() {
-	piece_renderers.clear();
-	piece_renderers.reserve(PieceKind::ALL_PIECE_KINDS.size());
-
-	using graphics::ImageRenderer;
-
-	const size_t size = get_piece_size();
-	for (const auto &kind : PieceKind::ALL_PIECE_KINDS) {
-		ImageRenderer renderer(kind.get_sprite_path(), size, size);
-
-		piece_renderers.emplace(kind, std::move(renderer));
-	}
 }
 
 void Board::init_board(bool flip) {
@@ -214,9 +204,12 @@ void Board::init_board(bool flip) {
 	boards[PieceKind::BLACK_KING]				= static_cast<uint64_t>(king_setup) << black_pieces_shift;
 }
 
+bool Board::flipped() const {
+	return is_flipped;
+}
+
 void Board::flip() {
-	is_flipped				   = !is_flipped;
-	preRenderedBoardText.first = nullptr;
+	is_flipped = !is_flipped;
 
 	if (base_game_pos) {
 		init_board(is_flipped);
@@ -224,169 +217,6 @@ void Board::flip() {
 		for (auto &pair : boards) {
 			pair.second = std::byteswap(pair.second.to_ullong());
 		}
-	}
-}
-
-void Board::update() {
-	auto weak_renderer = win.get_renderer();
-
-	if (auto renderer = weak_renderer.lock()) {
-		check_pre_rendered(renderer);
-	}
-}
-
-void Board::draw() const {
-	draw_chessboard();
-	draw_pieces();
-	draw_selected();
-}
-
-void Board::draw_chessboard() const {
-	using graphics::Color;
-
-	auto  weak_renderer = win.get_renderer();
-	Color col;
-
-	if (auto renderer = weak_renderer.lock()) {
-		for (size_t y = 0; y < 8; y++) {
-			bool y_even = y % 2 == 0;
-
-			for (size_t x = 0; x < 8; x++) {
-				bool x_even = x % 2 == 0;
-
-				if (y_even) {
-					col = x_even ? Color::LIGHT_SQUARE : Color::DARK_SQUARE;
-				} else {
-					col = x_even ? Color::DARK_SQUARE : Color::LIGHT_SQUARE;
-				}
-
-				SDL_Rect rect;
-				rect.w = rect.h = case_size;
-				rect.x			= static_cast<int>(x) * case_size;
-				rect.y			= static_cast<int>(y) * case_size;
-
-				SDL_SetRenderDrawColor(renderer.get(), col.r(), col.g(), col.b(), col.a());
-				SDL_RenderFillRect(renderer.get(), &rect);
-			}
-		}
-
-		for (size_t i = 0; i < 8; i++) {
-			preRenderedBoardText.second.numbers[i].render();
-			preRenderedBoardText.second.letters[i].render();
-		}
-	} else {
-		throw std::runtime_error("couldn't get renderer: weak ptr expired");
-	}
-}
-
-graphics::window::Coord Board::gen_sprite_coord(size_t x, size_t y) const {
-	const double shift = case_size * 0.1;
-	return {
-		.x = static_cast<size_t>((static_cast<double>(x) * case_size) + shift),
-		.y = static_cast<size_t>((static_cast<double>(y) * case_size) + shift),
-	};
-}
-
-void Board::draw_pieces() const {
-	if (!is_valid()) {
-		std::cerr << "board not valid, can't draw pieces" << std::endl;
-		return;
-	}
-
-	auto weak_renderer = win.get_renderer();
-
-	if (auto renderer = weak_renderer.lock()) {
-		for (const auto &pair : boards) {
-			auto board = pair.second;
-
-			if (board.none()) continue;
-
-			auto kind			= pair.first;
-			auto piece_renderer = piece_renderers.at(kind);
-
-			for (size_t i = 0; i < board.size(); i++) {
-				if (!board[i]) continue;
-
-				size_t x = i % 8;
-				size_t y = i / 8;
-
-				if (selected.has_value() && x == selected->coord.x() && y == selected->coord.y()) {
-					continue;
-				}
-
-				auto tex_coord = gen_sprite_coord(x, y);
-				piece_renderer.set_coord(tex_coord.x, tex_coord.y);
-				piece_renderer.render(renderer);
-			}
-		}
-	}
-}
-
-void Board::draw_selected() const {
-	using std::max;
-
-	if (!selected) return;
-
-	auto win_size = win.size();
-
-	if (auto renderer = win.get_renderer().lock()) {
-		graphics::ImageRenderer img_renderer = piece_renderers.at(selected->kind);
-
-		size_t					x = 0, y = 0;
-		x = max(0, selected->rect.x);
-		y = max(0, selected->rect.y);
-
-		if (selected->rect.x + selected->rect.w > win_size.first) x = win_size.first - selected->rect.w;
-		if (selected->rect.y + selected->rect.h > win_size.second) y = win_size.first - selected->rect.h;
-
-		img_renderer.set_coord(x, y);
-		img_renderer.set_size(selected->rect.w, selected->rect.h);
-		img_renderer.render(renderer);
-	} else {
-		throw std::runtime_error("couldn't lock renderer");
-	}
-}
-
-void Board::check_pre_rendered(const std::shared_ptr<SDL_Renderer> &renderer) {
-	if (renderer == preRenderedBoardText.first) {
-		return;
-	}
-
-	if (renderer != preRenderedBoardText.first) {
-		preRenderedBoardText.second.numbers.clear();
-		preRenderedBoardText.second.letters.clear();
-	}
-
-	using graphics::Color;
-
-	preRenderedBoardText.first		  = renderer;
-	PreRenderedBoardText &preRendered = preRenderedBoardText.second;
-	const char			 *letters_str = is_flipped ? "hgfedcba" : "abcdefgh";
-
-	preRendered.numbers.reserve(8);
-	preRendered.letters.reserve(8);
-
-	for (size_t i = 0; i < 8; i++) {
-		// Numbers initialization
-
-		preRendered.numbers.emplace_back(renderer, "Segoe UI bold.ttf", 18);
-
-		preRendered.numbers.back().set_coord(static_cast<size_t>(.06 * case_size),
-			static_cast<size_t>((static_cast<double>(i) + 0.04) * case_size));
-		preRendered.numbers.back().set_content(std::to_string(is_flipped ? i + 1 : 8 - i));
-		preRendered.numbers.back().set_color(i % 2 ? Color::LIGHT_SQUARE : Color::DARK_SQUARE);
-
-		preRendered.numbers.back().reload_text();
-
-		// Letters initialization
-
-		preRendered.letters.emplace_back(renderer, "Segoe UI bold.ttf", 18);
-		preRendered.letters.back().set_coord(static_cast<size_t>((static_cast<double>(i) + 0.8) * case_size),
-			static_cast<size_t>(7.72 * case_size));
-		preRendered.letters.back().set_content(std::string(1, letters_str[i]));
-		preRendered.letters.back().set_color(i % 2 ? Color::DARK_SQUARE : Color::LIGHT_SQUARE);
-
-		preRendered.letters.back().reload_text();
 	}
 }
 
@@ -536,115 +366,39 @@ bool Board::is_valid() const {
 	return final.count() == ref;
 }
 
-void Board::select(size_t x, size_t y) {
-	Coord c(is_flipped, x / case_size, y / case_size);
-	std::cout << "board coordinates: " << c << std::endl;
+std::optional<PieceKind> Board::at(size_t x, size_t y) const {
+	return at(Coord(is_flipped, x, y));
+}
 
+std::optional<PieceKind> Board::at(const app::game::Coord &c) const {
 	size_t bitboardCoord = c.y() * 8 + c.x();
-	auto   piece_size	 = static_cast<int>(get_piece_size());
+
 	for (const auto &pair : boards) {
-		if (!pair.second[bitboardCoord]) {
-			continue;
+		if (pair.second[bitboardCoord]) {
+			return pair.first;
 		}
-
-		selected = SelectedPiece{
-			.coord = c,
-			.kind  = pair.first,
-		};
-
-		auto sprite_coord = gen_sprite_coord(c.x(), c.y());
-
-		selected->rect.x  = static_cast<int>(sprite_coord.x);
-		selected->rect.y  = static_cast<int>(sprite_coord.y);
-		selected->rect.w  = piece_size;
-		selected->rect.h  = piece_size;
-
-		selected->diff_x  = static_cast<ssize_t>(x - selected->rect.x);
-		selected->diff_y  = static_cast<ssize_t>(y - selected->rect.y);
-
-		break;
 	}
+
+	return std::nullopt;
 }
 
-void Board::drop_selected(size_t x, size_t y) {
-	if (!has_selected()) return;
+void Board::move_with_hint(const PieceKind &kind,
+	const app::game::Coord				   &origin,
+	const app::game::Coord				   &target) {
+	size_t target_idx = target.y() * 8 + target.x();
 
-	x					 /= case_size;
-	y					 /= case_size;
-
-	bitboard &board		  = boards[selected->kind];
-	size_t	  origin_idx  = selected->coord.y() * 8 + selected->coord.x();
-	size_t	  target_idx  = y * 8 + x;
-
-	board[origin_idx]	  = false;
-	board[target_idx]	  = true;
-
-	selected.reset();
-}
-
-bool Board::has_selected() const {
-	return selected.has_value();
-}
-
-void Board::move_pointer_piece(int x, int y) {
-	using graphics::ImageRenderer;
-
-	if (!has_selected()) return;
-
-	x				 = std::max(x, 0);
-	y				 = std::max(y, 0);
-
-	selected->rect.x = static_cast<int>(x - selected->diff_x);
-	selected->rect.y = static_cast<int>(y - selected->diff_y);
-}
-
-Chess::Chess(graphics::window::Window &window)
-	: win(window),
-	  board(window, false) {
-}
-
-void Chess::update() {
-	board.update();
-}
-
-void Chess::draw() const {
-	board.draw();
-}
-
-void Chess::handle_events(const SDL_Event &e) {
-	switch (e.type) {
-		case SDL_KEYDOWN:
-			switch (e.key.keysym.sym) {
-				case SDLK_ESCAPE:
-					win.quit();
-					break;
-
-				case SDLK_f:
-					board.flip();
-					break;
-			}
-			break;
-		case SDL_MOUSEBUTTONDOWN:
-			switch (e.button.button) {
-				case SDL_BUTTON_LEFT:
-					board.select(e.button.x, e.button.y);
-					break;
-			}
-			break;
-		case SDL_MOUSEMOTION:
-			if (board.has_selected()) {
-				board.move_pointer_piece(e.motion.x, e.motion.y);
-			}
-
-			break;
-		case SDL_MOUSEBUTTONUP:
-			switch (e.button.button) {
-				case SDL_BUTTON_LEFT:
-					board.drop_selected(e.button.x, e.button.y);
-					break;
-			}
-			break;
+	for (auto pair : boards) {
+		if (pair.second[target_idx]) return;
 	}
+
+	bitboard &board		 = boards.at(kind);
+
+	size_t	  origin_idx = origin.y() * 8 + origin.x();
+
+	if (!board[origin_idx]) return;
+
+	board[origin_idx] = false;
+	board[target_idx] = true;
 }
 
 }  // namespace app::game

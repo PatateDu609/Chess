@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "game/game.hpp"
+#include "graphics/game.hpp"
 #include "graphics/window.hpp"
 
 int init() {
@@ -23,7 +24,7 @@ int main() {
 		graphics::window::Window win("Chess");
 
 		try {
-			win.bind_app(std::make_unique<app::game::Chess>(win));
+			win.bind_app(std::make_unique<graphics::game::Chess>(win));
 			win.open();
 			win.run();
 		} catch (const std::exception& e) {

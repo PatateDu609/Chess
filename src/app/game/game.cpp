@@ -14,153 +14,17 @@
 
 namespace app::game {
 
-Coord::InvalidCoordException::InvalidCoordException(size_t x, size_t y) {
-	std::ostringstream oss;
-	oss << "invalid coord: (" << x << ", " << y << ")";
-
-	const char *f = ":";
-	if (x > 8) {
-		oss << f << " x must be < 8";
-		f = ",";
-	}
-
-	if (y > 8) {
-		oss << f << " y must be < 8";
-	}
-
-	msg = oss.str();
-}
-
-Coord::InvalidCoordException::InvalidCoordException(const std::string &algebraic_form) {
-	std::ostringstream oss;
-	oss << "invalid algebraic form: " << algebraic_form;
-
-	const char *f	   = ":";
-
-	char		letter = static_cast<char>(tolower(algebraic_form[0]));
-	if (letter < 'a' || 'h' < letter) {
-		oss << f << " first char should be a letter in [a, h]";
-		f = ",";
-	}
-
-	char nb = algebraic_form[1];
-	if (nb < '1' || '8' < nb) {
-		oss << f << "second char should be a number in [1, 8]";
-	}
-
-	msg = oss.str();
-}
-
-const char *Coord::InvalidCoordException::what() const noexcept {
-	return msg.c_str();
-}
-
-Coord::Coord(bool board_flipped, uint8_t x, uint8_t y)
-	: _board_flipped(board_flipped),
-	  _x(x),
-	  _y(y) {
-	if (!is_valid(x, y)) {
-		throw InvalidCoordException(x, y);
-	}
-
-	update_algebraic();
-}
-
-Coord::Coord(bool board_flipped, std::string algebraic_form)
-	: _algebraic(std::move(algebraic_form)),
-	  _x(0),
-	  _y(0),
-	  _board_flipped(board_flipped) {
-	if (!is_valid(_algebraic)) {
-		throw InvalidCoordException(algebraic_form);
-	}
-
-	update_coord_couple();
-}
-
-const std::string &Coord::algebraic() const {
-	return _algebraic;
-}
-
-void Coord::algebraic(std::string val) {
-	_algebraic = std::move(val);
-}
-
-uint8_t Coord::x() const {
-	return _x;
-}
-
-void Coord::x(uint8_t val) {
-	_x = val;
-}
-
-uint8_t Coord::y() const {
-	return _y;
-}
-
-void Coord::y(uint8_t val) {
-	_y = val;
-}
-
-std::string Coord::to_string(bool full) const {
-	std::ostringstream oss;
-
-	oss << algebraic() << " (x = " << static_cast<int>(x()) << ", y = " << static_cast<int>(y()) << ")";
-	return oss.str();
-}
-
-void Coord::update_algebraic() {
-	const static std::string letters = "abcdefgh";
-
-	_algebraic.assign(2, ' ');
-	_algebraic[0] = letters[x()];
-	_algebraic[1] = static_cast<char>('1' + y());
-}
-
-void Coord::update_coord_couple() {
-	x(tolower(_algebraic[0]) - 'a');
-	y(_algebraic[1] - '1');
-}
-
-bool Coord::is_valid(uint8_t x, uint8_t y) {
-	return x < 8 && y < 8;
-}
-
-bool Coord::is_valid(std::string algebraic) {
-	char letter = static_cast<char>(tolower(algebraic[0]));
-	char nb		= algebraic[1];
-
-	return ('a' <= letter && letter <= 'h') && ('1' <= nb && nb <= '8');
-}
-
-bool Coord::operator==(const Coord &other) const {
-	return algebraic() == other.algebraic();
-}
-
-bool Coord::operator!=(const Coord &other) const {
-	return !(*this == other);
-}
-
-std::ostream &operator<<(std::ostream &os, const Coord &coord) {
-	os << coord.algebraic() << " (x = " << static_cast<int>(coord.x())
-	   << ", y = " << static_cast<int>(coord.y()) << "), board flipped ? ";
-	os << std::boolalpha << coord._board_flipped << std::noboolalpha;
-
-	return os;
-}
-
 Board::Board(bool empty)
 	: base_game_pos(false),
 	  is_flipped(false) {
-	if (!empty) init_board(false);
+	if (!empty) init_board();
 }
 
-void Board::init_board(bool flip) {
+void Board::init_board() {
 	for (auto &pair : boards) {
 		pair.second = 0;
 	}
 
-	is_flipped	  = flip;
 	base_game_pos = true;
 
 	uint64_t				 tmp_board;
@@ -168,14 +32,14 @@ void Board::init_board(bool flip) {
 	static constexpr uint8_t rook_setup			= 0b10000001;
 	static constexpr uint8_t knight_setup		= 0b01000010;
 	static constexpr uint8_t bishop_setup		= 0b00100100;
-	const uint8_t			 king_setup			= is_flipped ? 0b00001000 : 0b00010000;
-	const uint8_t			 queen_setup		= is_flipped ? 0b00010000 : 0b00001000;
+	static constexpr uint8_t king_setup			= 0b00010000;
+	static constexpr uint8_t queen_setup		= 0b00001000;
 
-	const int				 white_pawns_shift	= is_flipped ? 8 : 48;
-	const int				 black_pawns_shift	= is_flipped ? 48 : 8;
+	static constexpr int	 white_pawns_shift	= 48;
+	static constexpr int	 black_pawns_shift	= 8;
 
-	const int				 white_pieces_shift = white_pawns_shift == 48 ? 56 : 0;
-	const int				 black_pieces_shift = black_pawns_shift == 48 ? 56 : 0;
+	static constexpr int	 white_pieces_shift = 56;
+	static constexpr int	 black_pieces_shift = 0;
 
 	tmp_board									= static_cast<uint64_t>(pawn_setup) << black_pawns_shift;
 	boards[PieceKind::BLACK_PAWN]				= tmp_board;
@@ -210,14 +74,6 @@ bool Board::flipped() const {
 
 void Board::flip() {
 	is_flipped = !is_flipped;
-
-	if (base_game_pos) {
-		init_board(is_flipped);
-	} else {
-		for (auto &pair : boards) {
-			pair.second = std::byteswap(pair.second.to_ullong());
-		}
-	}
 }
 
 void Board::dump(bool merged) const {
@@ -367,11 +223,11 @@ bool Board::is_valid() const {
 }
 
 std::optional<PieceKind> Board::at(size_t x, size_t y) const {
-	return at(Coord(is_flipped, x, y));
+	return at(coord::Agnostic(x, y));
 }
 
-std::optional<PieceKind> Board::at(const app::game::Coord &c) const {
-	size_t bitboardCoord = c.y() * 8 + c.x();
+std::optional<PieceKind> Board::at(const coord::Agnostic &c) const {
+	size_t bitboardCoord = c.y * 8 + c.x;
 
 	for (const auto &pair : boards) {
 		if (pair.second[bitboardCoord]) {
@@ -382,10 +238,25 @@ std::optional<PieceKind> Board::at(const app::game::Coord &c) const {
 	return std::nullopt;
 }
 
+bool Board::check_static_move_validity(const PieceKind &kind,
+	const coord::Agnostic							   &origin,
+	const coord::Agnostic							   &target) const {
+	coord::Notation o(is_flipped, origin.x, origin.y);
+	coord::Notation t(is_flipped, target.x, target.y);
+
+	if (!kind(o, t)) {
+		std::cerr << "move " << kind.get_name() << " " << o.algebraic() << " to " << t.algebraic()
+				  << " invalid\n";
+		return false;
+	}
+
+	return true;
+}
+
 void Board::move_with_hint(const PieceKind &kind,
-	const app::game::Coord				   &origin,
-	const app::game::Coord				   &target) {
-	size_t target_idx = target.y() * 8 + target.x();
+	const coord::Agnostic				   &origin,
+	const coord::Agnostic				   &target) {
+	size_t target_idx = target.y * 8 + target.x;
 
 	for (auto pair : boards) {
 		if (pair.second[target_idx]) return;
@@ -393,9 +264,13 @@ void Board::move_with_hint(const PieceKind &kind,
 
 	bitboard &board		 = boards.at(kind);
 
-	size_t	  origin_idx = origin.y() * 8 + origin.x();
+	size_t	  origin_idx = origin.y * 8 + origin.x;
 
 	if (!board[origin_idx]) return;
+
+	if (!check_static_move_validity(kind, origin, target)) {
+		return;
+	}
 
 	board[origin_idx] = false;
 	board[target_idx] = true;

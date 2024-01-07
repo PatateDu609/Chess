@@ -58,3 +58,6 @@ AllowShortLambdasOnASingleLine: None
 AllowShortFunctionsOnASingleLine: None
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
+
+MaxEmptyLinesToKeep: 2
+SeparateDefinitionBlocks: Always

@@ -34,7 +34,7 @@ private:
 	};
 
 	struct SelectedPiece {
-		app::game::Coord coord;
+		app::game::coord::Agnostic coord;
 		PieceKind		 kind;
 		SDL_Rect		 rect;
 

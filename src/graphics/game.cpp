@@ -92,8 +92,8 @@ void Board::draw_pieces() const {
 	if (auto renderer = weak_renderer.lock()) {
 		size_t sx, sy;
 		if (has_selected()) {
-			sx = selected->coord.x();
-			sy = selected->coord.y();
+			sx = selected->coord.x;
+			sy = selected->coord.y;
 		}
 
 		for (size_t y = 0; y < 8; y++) {
@@ -102,14 +102,21 @@ void Board::draw_pieces() const {
 					continue;
 				}
 
-				auto kind			= board.at(x, y);
+				auto kind = board.at(x, y);
 				if (!kind.has_value()) {
 					continue;
 				}
 
-				auto piece_renderer = piece_renderers.at(*kind);
+				auto		  piece_renderer = piece_renderers.at(*kind);
 
-				auto tex_coord = gen_sprite_coord(x, y);
+				window::Coord tex_coord{};
+
+				if (board.flipped()) {
+					tex_coord = gen_sprite_coord(7 - x, 7 - y);
+				} else {
+					tex_coord = gen_sprite_coord(x, y);
+				}
+
 				piece_renderer.set_coord(tex_coord.x, tex_coord.y);
 				piece_renderer.render(renderer);
 			}
@@ -191,9 +198,9 @@ void Board::flip() {
 }
 
 void Board::select(size_t x, size_t y) {
-	using app::game::Coord;
+	using Coord = app::game::coord::Agnostic;
 
-	Coord c(board.flipped(), x / case_size, y / case_size);
+	Coord c(x / case_size, y / case_size);
 	std::cout << "board coordinates: " << c << std::endl;
 
 	auto piece_size = static_cast<int>(get_piece_size());
@@ -209,7 +216,7 @@ void Board::select(size_t x, size_t y) {
 		.moved = false,
 	};
 
-	auto sprite_coord = gen_sprite_coord(c.x(), c.y());
+	auto sprite_coord = gen_sprite_coord(c.x, c.y);
 
 	selected->rect.x  = static_cast<int>(sprite_coord.x);
 	selected->rect.y  = static_cast<int>(sprite_coord.y);
@@ -221,17 +228,17 @@ void Board::select(size_t x, size_t y) {
 }
 
 void Board::drop_selected(size_t x, size_t y) {
-	using app::game::Coord;
+	using Coord = app::game::coord::Agnostic;
 
 	if (!has_selected()) return;
 
 	if (!selected->moved) {
-		std::cout << selected->coord.to_string(true) << " not moved\n";
+		std::cout << selected->coord << " not moved\n";
 		selected.reset();
 		return;
 	}
 
-	Coord target(board.flipped(), x / case_size, y / case_size);
+	Coord target(x / case_size, y / case_size);
 	board.move_with_hint(selected->kind, selected->coord, target);
 
 	selected.reset();
@@ -242,7 +249,7 @@ bool Board::has_selected() const {
 }
 
 void Board::move_pointer_piece(int x, int y) {
-	using app::game::Coord;
+	using Coord = app::game::coord::Agnostic;
 	using graphics::ImageRenderer;
 
 	if (!has_selected()) return;
@@ -253,7 +260,7 @@ void Board::move_pointer_piece(int x, int y) {
 	selected->rect.x = static_cast<int>(x - selected->diff_x);
 	selected->rect.y = static_cast<int>(y - selected->diff_y);
 
-	Coord c(board.flipped(), x / case_size, y / case_size);
+	Coord c(x / case_size, y / case_size);
 	if (c != selected->coord) {
 		selected->moved = true;
 	}
